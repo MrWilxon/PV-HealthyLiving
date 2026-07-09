@@ -159,11 +159,15 @@ router.get('/backup', asyncHandler(async (req: Request, res: Response) => {
   res.json(backup);
 }));
 
-router.post('/restore', asyncHandler(async (req: Request, res: Response) => {
-  const { data } = req.body;
-  if (!data || !Array.isArray(data.products) || !Array.isArray(data.portfolios) || !Array.isArray(data.portfolioItems)) {
-    throw new AppError('Invalid backup data format');
+router.post('/restore', adminMiddleware, asyncHandler(async (req: Request, res: Response) => {
+  const parsed = backupSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new AppError(`Invalid backup data: ${parsed.error.issues.map(i => i.message).join(', ')}`);
   }
+
+  const { data } = parsed.data;
+
+  logger.warn('Data restore requested', { ip: req.ip, itemCount: data.products.length + data.portfolios.length + data.portfolioItems.length });
 
   const collections = ['products', 'portfolios', 'portfolioItems'];
   for (const name of collections) {

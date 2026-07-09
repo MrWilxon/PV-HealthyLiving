@@ -7,7 +7,7 @@ import { ProductForm } from '@/components/products/ProductForm';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { Product, ProductFormData } from '@/types';
+import { Product } from '@/types';
 import { useProductStore } from '@/stores/useProductStore';
 
 export default function ProductsPage() {
@@ -52,13 +52,18 @@ export default function ProductsPage() {
     }
   }, [searchProducts, clearSearch]);
 
-  const handleSubmit = async (data: ProductFormData) => {
+  const handleSubmit = async (data: { code: string; name: string; size: string; dp: string; pv?: string }) => {
+    const parsed = {
+      ...data,
+      dp: parseFloat(data.dp) || 0,
+      pv: data.pv ? parseFloat(data.pv) : null,
+    };
     if (editingProduct) {
-      await updateProduct(editingProduct.id, data);
+      await updateProduct(editingProduct.id, parsed);
     } else if (duplicatingProduct) {
-      await createProduct({ ...data, code: `${data.code}-COPY` });
+      await createProduct({ ...parsed, code: `${parsed.code}-COPY` });
     } else {
-      await createProduct(data);
+      await createProduct(parsed);
     }
     setEditingProduct(null);
     setDuplicatingProduct(null);
