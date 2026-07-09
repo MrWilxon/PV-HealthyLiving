@@ -70,22 +70,6 @@ export const api = {
       }),
   },
 
-  dashboard: {
-    stats: async (): Promise<DashboardStats> => {
-      const [productsRes, portfolios] = await Promise.all([
-        request<{ products: Product[]; total: number }>('/products?limit=1'),
-        request<Portfolio[]>('/portfolios'),
-      ]);
-      const totalPV = portfolios.reduce((sum, p) => sum + (p.totalPV || 0), 0);
-      return {
-        totalProducts: productsRes.total,
-        totalPortfolios: portfolios.length,
-        totalPV,
-        recentPortfolios: portfolios.slice(0, 5),
-      };
-    },
-  },
-
   settings: {
     get: () => request<Settings>('/settings'),
     update: (data: Partial<Settings>) =>
