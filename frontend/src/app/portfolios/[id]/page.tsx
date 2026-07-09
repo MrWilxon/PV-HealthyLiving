@@ -8,7 +8,7 @@ import { AddProductDialog } from '@/components/portfolio/AddProductDialog';
 import { AnalyticsDialog } from '@/components/portfolio/AnalyticsDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ArrowLeft, Printer, Calendar, Plus, BarChart3, TrendingUp, Pencil, Copy, Trash2 } from 'lucide-react';
+import { ArrowLeft, Printer, Calendar, Plus, BarChart3, TrendingUp, Pencil, Copy, Trash2, Download } from 'lucide-react';
 import { SkeletonMonthCard } from '@/components/ui/skeleton';
 import { Product } from '@/types';
 import { usePortfolioStore } from '@/stores/usePortfolioStore';
@@ -179,7 +179,11 @@ export default function PortfolioDetailsPage() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
+      <div className="print-only" style={{ display: 'none' }}>
+        <h1>Portfolio: {currentPortfolio.name}</h1>
+        <p>Date: {currentPortfolio.date || 'N/A'}</p>
+      </div>
+      <div className="space-y-6 no-print">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
@@ -201,6 +205,22 @@ export default function PortfolioDetailsPage() {
             <Button variant="outline" onClick={() => window.print()}>
               <Printer className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Print</span>
+            </Button>
+            <Button variant="outline" onClick={() => {
+              const data = {
+                ...currentPortfolio,
+                exportedAt: new Date().toISOString(),
+              };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `portfolio-${currentPortfolio.name.replace(/\s+/g, '-').toLowerCase()}-${currentPortfolio.date || 'undated'}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}>
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Export</span>
             </Button>
             <Button onClick={() => setAddDialogOpen(true)}>
               <Plus className="h-4 w-4 sm:mr-2" />

@@ -25,6 +25,7 @@ import {
 import { usePortfolioStore } from '@/stores/usePortfolioStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useToast } from '@/components/ui/toast';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { Product, PortfolioItem } from '@/types';
 import { formatCurrency, formatPV } from '@/lib/utils';
 import {
@@ -221,6 +222,8 @@ export default function EditPortfolioPage() {
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [localDate, setLocalDate] = useState('');
   const dateDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  useUnsavedChanges(isDirty);
 
   useEffect(() => {
     if (id) {
@@ -228,6 +231,12 @@ export default function EditPortfolioPage() {
     }
     fetchSettings();
   }, [id, fetchPortfolio, fetchSettings]);
+
+  useEffect(() => {
+    return () => {
+      if (dateDebounceRef.current) clearTimeout(dateDebounceRef.current);
+    };
+  }, []);
 
   const monthGroups = useMemo(
     () => (currentPortfolio ? groupByMonth(currentPortfolio.items) : []),
@@ -263,15 +272,19 @@ export default function EditPortfolioPage() {
 
   const handleDateChange = (date: string) => {
     setLocalDate(date);
+    setIsDirty(true);
     if (dateDebounceRef.current) clearTimeout(dateDebounceRef.current);
     dateDebounceRef.current = setTimeout(async () => {
       if (currentPortfolio && date !== currentPortfolio.date) {
         try {
           await updatePortfolio(currentPortfolio.id, { date });
+          setIsDirty(false);
           toast('Date updated', 'success');
         } catch {
           toast('Failed to update date', 'error');
         }
+      } else {
+        setIsDirty(false);
       }
     }, 800);
   };
@@ -342,10 +355,26 @@ export default function EditPortfolioPage() {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
-            <p className="text-sm text-gray-500">Loading portfolio...</p>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 rounded-lg bg-gray-100 animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-7 w-48 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="rounded-xl border bg-white p-5 space-y-3">
+                  <div className="h-5 w-36 bg-gray-200 rounded animate-pulse" />
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-gray-100 rounded animate-pulse" />
+                    <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </MainLayout>

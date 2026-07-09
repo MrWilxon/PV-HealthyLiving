@@ -17,6 +17,7 @@ import {
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useToast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,7 @@ export default function SettingsPage() {
   const [newVatPreset, setNewVatPreset] = useState('');
   const [activeSection, setActiveSection] = useState('company');
   const [hasChanges, setHasChanges] = useState(false);
+  useUnsavedChanges(hasChanges);
 
   const {
     register,
@@ -206,8 +208,30 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600" />
+        <div className="space-y-6">
+          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-xl border bg-white p-6 space-y-4">
+                  <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />
+                  <div className="space-y-3">
+                    <div className="h-4 w-full bg-gray-100 rounded animate-pulse" />
+                    <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-xl border bg-white p-6 space-y-4">
+                <div className="h-5 w-28 bg-gray-200 rounded animate-pulse" />
+                <div className="space-y-3">
+                  <div className="h-4 w-full bg-gray-100 rounded animate-pulse" />
+                  <div className="h-4 w-2/3 bg-gray-100 rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
@@ -436,6 +460,37 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                       <p className="text-xs text-gray-400 mt-1.5">Import/export product catalog as JSON</p>
+                    </div>
+
+                    <div className="border-t" />
+
+                    {/* Seed Data */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Seed Sample Products</h4>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          if (!confirm('This will add 31 sample products. Continue?')) return;
+                          try {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/settings/seed`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ confirm: true }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error?.message || 'Seed failed');
+                            toast(data.message, 'success');
+                          } catch (err) {
+                            toast((err as Error).message, 'error');
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        Seed Products
+                      </Button>
+                      <p className="text-xs text-gray-400 mt-1.5">Add 31 sample PV HealthyLiving products</p>
                     </div>
 
                     <div className="border-t" />

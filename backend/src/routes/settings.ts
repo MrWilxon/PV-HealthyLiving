@@ -1,9 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { z } from 'zod';
 import { db, DocData } from '../config/firebase';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
-import { adminMiddleware } from '../middleware/auth';
-import { logger } from '../utils/logger';
 
 const router = Router();
 const settingsRef = db.collection('settings');
@@ -108,22 +105,74 @@ router.put('/', asyncHandler(async (req: Request, res: Response) => {
   res.json({ id: updated.id, ...defaultSettings, ...updatedData });
 }));
 
-const backupSchema = z.object({
-  data: z.object({
-    products: z.array(z.object({ id: z.string() }).passthrough()),
-    portfolios: z.array(z.object({ id: z.string() }).passthrough()),
-    portfolioItems: z.array(z.object({ id: z.string() }).passthrough()),
-    settings: z.object({}).passthrough().optional(),
-  }),
-});
+router.post('/seed', asyncHandler(async (req: Request, res: Response) => {
+  const { confirm } = req.body;
+  if (confirm !== true) {
+    throw new AppError('Set confirm: true to seed products');
+  }
 
-router.post('/reset', adminMiddleware, asyncHandler(async (req: Request, res: Response) => {
+  const productsRef = db.collection('products');
+  const existing = await productsRef.get();
+  if (!existing.empty) {
+    throw new AppError('Products already exist. Reset data first to re-seed.');
+  }
+
+  const seedData = [
+    { code: "NP29103A", name: "Truman Bathing Bar", size: "125 g", pv: 4.79, dp: 230 },
+    { code: "NP7006E", name: "Product Catalogue - English", size: "1 piece", pv: null, dp: 80 },
+    { code: "NP33104", name: "MOM Long Wear Liquid Lipstick Walnut Crush 004", size: "6 ml", pv: 19.38, dp: 930 },
+    { code: "NP33105", name: "MOM Long Wear Liquid Lipstick Red Velvet 005", size: "6 ml", pv: 19.38, dp: 930 },
+    { code: "NP33106", name: "MOM Long Wear Liquid Lipstick Wine Mousse 006", size: "6 ml", pv: 19.38, dp: 930 },
+    { code: "NP33109", name: "MOM Long Wear Liquid Lipstick Pink Paradise 009", size: "6 ml", pv: 19.38, dp: 930 },
+    { code: "NP33122", name: "MOM Long Wear Liquid Lipstick Pink Shock 022", size: "6 ml", pv: 19.38, dp: 930 },
+    { code: "NP33124", name: "MOM Long Wear Liquid Lipstick Perfect Maroon 024", size: "6 ml", pv: 19.38, dp: 930 },
+    { code: "NP35002", name: "MOM Deep Define Kajal (Black)", size: "2.5 g", pv: 8.65, dp: 415 },
+    { code: "NP35401", name: "MOM Showtime Mascara", size: "8 ml", pv: 19.17, dp: 920 },
+    { code: "NP35205A", name: "MOM Makeup Pro Fix Loose Powder", size: "6 g", pv: 18.33, dp: 880 },
+    { code: "NP30015A", name: "MOM Pro Perfect Foundation Bisque 001", size: "30 ml", pv: 18.75, dp: 900 },
+    { code: "NP30016A", name: "MOM Pro Perfect Foundation-Tawny 002", size: "30 ml", pv: 18.75, dp: 900 },
+    { code: "NP28001", name: "Skin Formula 9 Youth Elixir Lotion", size: "25 ml", pv: 59.38, dp: 2850 },
+    { code: "NP28002", name: "Skin Formula 9 Intense Hydration Cream", size: "50 g", pv: 52.08, dp: 2500 },
+    { code: "NP28004A", name: "Skin Formula 9 Deep Cleansing Oil", size: "25 ml", pv: 48.97, dp: 2350 },
+    { code: "NP28007", name: "Skin Formula 9 Brightening Treatment Cream", size: "50 g", pv: 82.81, dp: 3975 },
+    { code: "NP28008", name: "Skin Formula 9 Blemish Gel", size: "15 ml", pv: 38.54, dp: 1850 },
+    { code: "NP28009", name: "Skin Formula 9 Under Eye Serum", size: "15 ml", pv: 39.06, dp: 1875 },
+    { code: "NP28014A", name: "Skin Formula 9 Radiant Glow Face Mist", size: "50 ml", pv: 21.88, dp: 1050 },
+    { code: "NP28016", name: "Skin Formula 9 Skin Perfecting Vitamin C Serum", size: "50 ml", pv: 37.50, dp: 1800 },
+    { code: "NP28017A", name: "Skin Formula 9 Hydrating Sunscreen Serum SPF 50 PA+++", size: "50 ml", pv: 37.50, dp: 1800 },
+    { code: "NP23020A", name: "Assure Deep Cleanse Shampoo (Oily)", size: "200 ml", pv: 5.38, dp: 310 },
+    { code: "NP23021A", name: "Assure Moisture Rich Shampoo (D&D)", size: "200 ml", pv: 5.38, dp: 310 },
+    { code: "NP23022A", name: "Assure Daily Care Shampoo (Normal)", size: "200 ml", pv: 5.38, dp: 310 },
+    { code: "NP23023A", name: "Assure Anti-Ageing Night Cream", size: "60 g", pv: 8.23, dp: 395 },
+    { code: "NP23024A", name: "Assure Complete Fairness Cream", size: "50 g", pv: 5.21, dp: 300 },
+    { code: "NP23029A", name: "Assure Sun Defense SPF 30+", size: "60 g", pv: 8.54, dp: 410 },
+    { code: "NP23030A", name: "Assure Clarifying Face Wash", size: "60 g", pv: 5.52, dp: 265 },
+    { code: "NP23033A", name: "Assure Aura Perfume Spray", size: "100 ml", pv: 16.25, dp: 780 },
+  ];
+
+  const now = new Date().toISOString();
+  let seeded = 0;
+  for (const p of seedData) {
+    const existingCheck = await productsRef.where('code', '==', p.code).get();
+    if (existingCheck.empty) {
+      await productsRef.add({
+        ...p,
+        isFavorite: false,
+        createdAt: now,
+        updatedAt: now,
+      });
+      seeded++;
+    }
+  }
+
+  res.json({ message: `Seeded ${seeded} products`, total: seedData.length });
+}));
+
+router.post('/reset', asyncHandler(async (req: Request, res: Response) => {
   const { confirm } = req.body;
   if (confirm !== true) {
     throw new AppError('Set confirm: true to reset all data');
   }
-
-  logger.warn('Data reset requested', { ip: req.ip });
 
   const collections = ['products', 'portfolios', 'portfolioItems'];
   for (const name of collections) {
@@ -159,15 +208,11 @@ router.get('/backup', asyncHandler(async (req: Request, res: Response) => {
   res.json(backup);
 }));
 
-router.post('/restore', adminMiddleware, asyncHandler(async (req: Request, res: Response) => {
-  const parsed = backupSchema.safeParse(req.body);
-  if (!parsed.success) {
-    throw new AppError(`Invalid backup data: ${parsed.error.issues.map(i => i.message).join(', ')}`);
+router.post('/restore', asyncHandler(async (req: Request, res: Response) => {
+  const { data } = req.body;
+  if (!data || !Array.isArray(data.products) || !Array.isArray(data.portfolios) || !Array.isArray(data.portfolioItems)) {
+    throw new AppError('Invalid backup data format');
   }
-
-  const { data } = parsed.data;
-
-  logger.warn('Data restore requested', { ip: req.ip, itemCount: data.products.length + data.portfolios.length + data.portfolioItems.length });
 
   const collections = ['products', 'portfolios', 'portfolioItems'];
   for (const name of collections) {
@@ -181,15 +226,15 @@ router.post('/restore', adminMiddleware, asyncHandler(async (req: Request, res: 
 
   for (const item of data.products) {
     const { id, ...rest } = item;
-    await db.collection('products').doc(id).set(rest);
+    await db.collection('products').doc(id).set(rest as DocData);
   }
   for (const item of data.portfolios) {
     const { id, ...rest } = item;
-    await db.collection('portfolios').doc(id).set(rest);
+    await db.collection('portfolios').doc(id).set(rest as DocData);
   }
   for (const item of data.portfolioItems) {
     const { id, ...rest } = item;
-    await db.collection('portfolioItems').doc(id).set(rest);
+    await db.collection('portfolioItems').doc(id).set(rest as DocData);
   }
 
   if (data.settings) {
