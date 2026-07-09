@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id             String          @id @default(cuid())
+  code           String          @unique
+  categoryId     String
+  name           String
+  size           String
+  pv             Float?
+  dp             Float
+  isFavorite     Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  category       Category        @relation(fields: [categoryId], references: [id])
+  portfolioItems PortfolioItem[]
+}
+
+model Portfolio {
+  id           String          @id @default(cuid())
+  name         String
+  customerName String
+  notes        String?
+  vatPercent   Float           @default(13)
+  subtotal     Float           @default(0)
+  vatAmount    Float           @default(0)
+  grandTotal   Float           @default(0)
+  status       String          @default("draft")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  items        PortfolioItem[]
+}
+
+model PortfolioItem {
+  id          String    @id @default(cuid())
+  portfolioId String
+  productId   String
+  productName String
+  productCode String
+  size        String
+  pv          Float
+  dp          Float
+  quantity    Int       @default(1)
+  totalPV     Float     @default(0)
+  totalPrice  Float     @default(0)
+  createdAt   DateTime  @default(now())
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id])
+}
+
+model Settings {
+  id               String  @id @default("singleton")
+  defaultVatPercent Float @default(13)
+  currency         String  @default("NPR")
+  decimalPlaces    Int     @default(2)
+  defaultQuantity  Int     @default(1)
+  autoSave         Boolean @default(true)
+}
