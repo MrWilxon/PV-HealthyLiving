@@ -5,7 +5,7 @@ const DB_PATH = path.join(__dirname, '..', '..', 'data.json');
 
 // ── Types ──────────────────────────────────────────────────────────
 
-export type DocValue = string | number | boolean | null | undefined | Record<string, unknown>;
+export type DocValue = string | number | boolean | null | undefined | number[] | Record<string, unknown> | unknown[];
 
 export interface DocData {
   [key: string]: DocValue;
@@ -42,7 +42,7 @@ export interface Query {
 
 export interface OrderedQuery {
   get(): Promise<QuerySnapshot>;
-  limit(n: number): OrderedQuery;
+  limit?(n: number): OrderedQuery;
 }
 
 export interface BatchOps {
@@ -155,15 +155,15 @@ class Collection {
       get: async () => {
         const all = await self.get();
         const filtered = all.docs.filter((doc) => {
-          const d = doc.data();
+          const d = doc.data() || {};
           const fieldVal = d[field];
           switch (op) {
             case '==': return fieldVal === value;
             case '!=': return fieldVal !== value;
-            case '>': return fieldVal > value;
-            case '<': return fieldVal < value;
-            case '>=': return fieldVal >= value;
-            case '<=': return fieldVal <= value;
+            case '>': return (fieldVal as number) > (value as number);
+            case '<': return (fieldVal as number) < (value as number);
+            case '>=': return (fieldVal as number) >= (value as number);
+            case '<=': return (fieldVal as number) <= (value as number);
             default: return false;
           }
         });
@@ -176,7 +176,20 @@ class Collection {
       },
       where: (f, o, v) => self.where(f, o, v),
       orderBy: (field, direction = 'asc') => self.orderBy(field, direction),
-      limit: (n) => self.orderBy(field, direction).limit(n),
+      limit: (n) => ({
+        get: async () => {
+          const q = await self.where(field, op, value).get();
+          const limited = q.docs.slice(0, n);
+          return { docs: limited, size: limited.length, empty: limited.length === 0, forEach: (cb: (doc: DocSnapshot) => void) => limited.forEach(cb) };
+        },
+        limit: (m: number) => ({
+          get: async () => {
+            const q = await self.where(field, op, value).get();
+            const limited = q.docs.slice(0, Math.min(n, m));
+            return { docs: limited, size: limited.length, empty: limited.length === 0, forEach: (cb: (doc: DocSnapshot) => void) => limited.forEach(cb) };
+          },
+        }),
+      }),
     };
   }
 
@@ -185,8 +198,13 @@ class Collection {
     const sort = async (): Promise<QuerySnapshot> => {
       const all = await self.get();
       all.docs.sort((a, b) => {
-        const aVal = a.data()[field];
-        const bVal = b.data()[field];
+        const d1 = a.data() || {};
+        const d2 = b.data() || {};
+        const aVal = d1[field] as string | number | undefined;
+        const bVal = d2[field] as string | number | undefined;
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
         const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
         return direction === 'desc' ? -cmp : cmp;
       });

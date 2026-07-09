@@ -62,3 +62,20 @@ export interface DashboardStats {
   totalPV: number;
   recentPortfolios: Portfolio[];
 }
+
+export interface BackupData {
+  version: string;
+  exportedAt: string;
+  settings: Settings;
+  products: Product[];
+  portfolios: Portfolio[];
+  portfolioItems: PortfolioItem[];
+}
+
+export interface ProductFormData {
+  code: string;
+  name: string;
+  size: string;
+  pv: number | null;
+  dp: number;
+}

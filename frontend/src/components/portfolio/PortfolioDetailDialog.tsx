@@ -77,7 +77,7 @@ export function PortfolioDetailDialog({ open, onOpenChange, portfolioId }: Portf
   const handleDeleteItem = async () => {
     if (!deleteItemId || !currentPortfolio) return;
     try {
-      await deleteItem(currentPortfolio.id, deleteItemId);
+      await deleteItem(deleteItemId);
       toast('Item deleted', 'success');
       setDeleteItemId(null);
       await fetchPortfolio(currentPortfolio.id);

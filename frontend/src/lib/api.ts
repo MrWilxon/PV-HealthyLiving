@@ -1,4 +1,4 @@
-import { Product, Portfolio, Settings, DashboardStats } from '@/types';
+import { Product, Portfolio, PortfolioItem, Settings, BackupData } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -55,12 +55,12 @@ export const api = {
 
   portfolioItems: {
     add: (portfolioId: string, data: { productId: string; quantity?: number; itemDate?: string }) =>
-      request<{ item: any; portfolio: Portfolio }>(`/portfolio/${portfolioId}/items`, {
+      request<{ item: PortfolioItem; portfolio: Portfolio }>(`/portfolio/${portfolioId}/items`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     update: (id: string, data: Partial<{ quantity: number; pv: number; dp: number; productName: string; productCode: string; size: string; itemDate: string }>) =>
-      request<{ item: any; portfolio: Portfolio }>(`/portfolio/items/${id}`, {
+      request<{ item: PortfolioItem; portfolio: Portfolio }>(`/portfolio/items/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
@@ -77,12 +77,8 @@ export const api = {
     reset: () =>
       request<{ message: string }>('/settings/reset', { method: 'POST', body: JSON.stringify({ confirm: true }) }),
     backup: () =>
-      request<any>('/settings/backup'),
-    restore: (data: any) =>
+      request<BackupData>('/settings/backup'),
+    restore: (data: BackupData) =>
       request<{ message: string }>('/settings/restore', { method: 'POST', body: JSON.stringify({ data }) }),
-  },
-
-  dashboard: {
-    stats: () => request<DashboardStats>('/dashboard/stats'),
   },
 };

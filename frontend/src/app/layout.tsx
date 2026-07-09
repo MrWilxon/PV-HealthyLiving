@@ -17,11 +17,52 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#111827",
 };
 
 export const metadata: Metadata = {
-  title: "PV HealthyLiving - Calculator & Portfolio",
-  description: "Business management application for PV calculation and portfolio management",
+  title: {
+    default: "PV HealthyLiving - Calculator & Portfolio",
+    template: "%s | PV HealthyLiving",
+  },
+  description: "Business management application for PV calculation and portfolio management. Track products, manage portfolios, and calculate totals with ease.",
+  keywords: ["PV calculator", "portfolio management", "business tools", "product tracking"],
+  authors: [{ name: "PV HealthyLiving" }],
+  creator: "PV HealthyLiving",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://pv-healthyliving.vercel.app",
+    siteName: "PV HealthyLiving",
+    title: "PV HealthyLiving - Calculator & Portfolio",
+    description: "Business management application for PV calculation and portfolio management.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PV HealthyLiving",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PV HealthyLiving - Calculator & Portfolio",
+    description: "Business management application for PV calculation and portfolio management.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -35,6 +76,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ToastProvider>{children}</ToastProvider>
       </body>

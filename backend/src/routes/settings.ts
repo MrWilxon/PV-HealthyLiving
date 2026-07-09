@@ -1,12 +1,24 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../config/firebase';
+import { db, DocData } from '../config/firebase';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
-import { adminMiddleware } from '../middleware/auth';
 
 const router = Router();
 const settingsRef = db.collection('settings');
 
-const defaultSettings = {
+interface SettingsData extends DocData {
+  defaultVatPercent: number;
+  currency: string;
+  decimalPlaces: number;
+  defaultQuantity: number;
+  autoSave: boolean;
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+  companyEmail: string;
+  vatPresets: number[];
+}
+
+const defaultSettings: SettingsData = {
   defaultVatPercent: 13,
   currency: 'NPR',
   decimalPlaces: 2,
@@ -24,10 +36,11 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   if (!doc.exists) {
     await settingsRef.doc('singleton').set(defaultSettings);
-    return res.json({ id: 'singleton', ...defaultSettings });
+    res.json({ id: 'singleton', ...defaultSettings });
+    return;
   }
 
-  const data = doc.data()!;
+  const data = doc.data() as SettingsData;
   res.json({
     id: doc.id,
     ...defaultSettings,
@@ -55,31 +68,47 @@ router.put('/', asyncHandler(async (req: Request, res: Response) => {
     await settingsRef.doc('singleton').set(defaultSettings);
   }
 
-  const updateData: any = {};
-  if (defaultVatPercent !== undefined) updateData.defaultVatPercent = parseFloat(defaultVatPercent);
+  const updateData: Partial<SettingsData> = {};
+
+  if (defaultVatPercent !== undefined) {
+    const val = parseFloat(defaultVatPercent);
+    if (isNaN(val) || val < 0 || val > 100) throw new AppError('defaultVatPercent must be between 0 and 100');
+    updateData.defaultVatPercent = val;
+  }
   if (currency !== undefined) updateData.currency = currency;
-  if (decimalPlaces !== undefined) updateData.decimalPlaces = parseInt(decimalPlaces);
-  if (defaultQuantity !== undefined) updateData.defaultQuantity = parseInt(defaultQuantity);
-  if (autoSave !== undefined) updateData.autoSave = autoSave;
+  if (decimalPlaces !== undefined) {
+    const val = parseInt(decimalPlaces);
+    if (isNaN(val) || val < 0 || val > 10) throw new AppError('decimalPlaces must be between 0 and 10');
+    updateData.decimalPlaces = val;
+  }
+  if (defaultQuantity !== undefined) {
+    const val = parseInt(defaultQuantity);
+    if (isNaN(val) || val < 1) throw new AppError('defaultQuantity must be at least 1');
+    updateData.defaultQuantity = val;
+  }
+  if (autoSave !== undefined) updateData.autoSave = Boolean(autoSave);
   if (companyName !== undefined) updateData.companyName = companyName;
   if (companyAddress !== undefined) updateData.companyAddress = companyAddress;
   if (companyPhone !== undefined) updateData.companyPhone = companyPhone;
   if (companyEmail !== undefined) updateData.companyEmail = companyEmail;
-  if (vatPresets !== undefined) updateData.vatPresets = vatPresets;
+  if (vatPresets !== undefined) {
+    if (!Array.isArray(vatPresets)) throw new AppError('vatPresets must be an array');
+    updateData.vatPresets = vatPresets.map((v: unknown) => Number(v)).filter((v: number) => !isNaN(v));
+  }
 
   if (Object.keys(updateData).length > 0) {
     await settingsRef.doc('singleton').update(updateData);
   }
 
   const updated = await settingsRef.doc('singleton').get();
-  const updatedData = updated.data()!;
+  const updatedData = updated.data() as SettingsData;
   res.json({ id: updated.id, ...defaultSettings, ...updatedData });
 }));
 
-router.post('/reset', adminMiddleware, asyncHandler(async (req: Request, res: Response) => {
+router.post('/reset', asyncHandler(async (req: Request, res: Response) => {
   const { confirm } = req.body;
   if (confirm !== true) {
-    return res.status(400).json({ error: { message: 'Set confirm: true to reset all data' } });
+    throw new AppError('Set confirm: true to reset all data');
   }
 
   const collections = ['products', 'portfolios', 'portfolioItems'];
@@ -108,18 +137,18 @@ router.get('/backup', asyncHandler(async (req: Request, res: Response) => {
     version: '1.0',
     exportedAt: new Date().toISOString(),
     settings: settingsDoc.exists ? settingsDoc.data() : defaultSettings,
-    products: products.docs.map((d: any) => ({ id: d.id, ...d.data() })),
-    portfolios: portfolios.docs.map((d: any) => ({ id: d.id, ...d.data() })),
-    portfolioItems: portfolioItems.docs.map((d: any) => ({ id: d.id, ...d.data() })),
+    products: products.docs.map((d) => ({ id: d.id, ...d.data() })),
+    portfolios: portfolios.docs.map((d) => ({ id: d.id, ...d.data() })),
+    portfolioItems: portfolioItems.docs.map((d) => ({ id: d.id, ...d.data() })),
   };
 
   res.json(backup);
 }));
 
-router.post('/restore', adminMiddleware, asyncHandler(async (req: Request, res: Response) => {
+router.post('/restore', asyncHandler(async (req: Request, res: Response) => {
   const { data } = req.body;
-  if (!data || !data.products || !data.portfolios || !data.portfolioItems) {
-    return res.status(400).json({ error: { message: 'Invalid backup data format' } });
+  if (!data || !Array.isArray(data.products) || !Array.isArray(data.portfolios) || !Array.isArray(data.portfolioItems)) {
+    throw new AppError('Invalid backup data format');
   }
 
   const collections = ['products', 'portfolios', 'portfolioItems'];

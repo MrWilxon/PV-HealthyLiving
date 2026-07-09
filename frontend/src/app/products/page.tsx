@@ -7,7 +7,7 @@ import { ProductForm } from '@/components/products/ProductForm';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { Product } from '@/types';
+import { Product, ProductFormData } from '@/types';
 import { useProductStore } from '@/stores/useProductStore';
 
 export default function ProductsPage() {
@@ -52,7 +52,7 @@ export default function ProductsPage() {
     }
   }, [searchProducts, clearSearch]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: ProductFormData) => {
     if (editingProduct) {
       await updateProduct(editingProduct.id, data);
     } else if (duplicatingProduct) {
