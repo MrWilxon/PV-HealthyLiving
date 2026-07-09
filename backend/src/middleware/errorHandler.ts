@@ -23,9 +23,12 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     url: req.originalUrl,
   });
 
-  res.status(status).json({
-    error: { message, status },
-  });
+  const response: any = { error: { message, status } };
+  if (process.env.NODE_ENV !== 'production') {
+    response.error.stack = err.stack;
+  }
+
+  res.status(status).json(response);
 }
 
 export function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {

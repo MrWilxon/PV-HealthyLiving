@@ -1,4 +1,4 @@
-import { Product, Portfolio, PortfolioItem, Settings, BackupData } from '@/types';
+import { Product, Portfolio, PortfolioItem, Settings, BackupData, DashboardStats } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -68,6 +68,22 @@ export const api = {
       request<{ message: string; portfolio: Portfolio }>(`/portfolio/items/${id}`, {
         method: 'DELETE',
       }),
+  },
+
+  dashboard: {
+    stats: async (): Promise<DashboardStats> => {
+      const [productsRes, portfolios] = await Promise.all([
+        request<{ products: Product[]; total: number }>('/products?limit=1'),
+        request<Portfolio[]>('/portfolios'),
+      ]);
+      const totalPV = portfolios.reduce((sum, p) => sum + (p.totalPV || 0), 0);
+      return {
+        totalProducts: productsRes.total,
+        totalPortfolios: portfolios.length,
+        totalPV,
+        recentPortfolios: portfolios.slice(0, 5),
+      };
+    },
   },
 
   settings: {

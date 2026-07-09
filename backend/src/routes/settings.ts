@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { db, DocData } from '../config/firebase';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
+import { adminMiddleware } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const settingsRef = db.collection('settings');
@@ -105,11 +108,22 @@ router.put('/', asyncHandler(async (req: Request, res: Response) => {
   res.json({ id: updated.id, ...defaultSettings, ...updatedData });
 }));
 
-router.post('/reset', asyncHandler(async (req: Request, res: Response) => {
+const backupSchema = z.object({
+  data: z.object({
+    products: z.array(z.object({ id: z.string() }).passthrough()),
+    portfolios: z.array(z.object({ id: z.string() }).passthrough()),
+    portfolioItems: z.array(z.object({ id: z.string() }).passthrough()),
+    settings: z.object({}).passthrough().optional(),
+  }),
+});
+
+router.post('/reset', adminMiddleware, asyncHandler(async (req: Request, res: Response) => {
   const { confirm } = req.body;
   if (confirm !== true) {
     throw new AppError('Set confirm: true to reset all data');
   }
+
+  logger.warn('Data reset requested', { ip: req.ip });
 
   const collections = ['products', 'portfolios', 'portfolioItems'];
   for (const name of collections) {
