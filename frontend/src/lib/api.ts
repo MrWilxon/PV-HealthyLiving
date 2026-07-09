@@ -76,7 +76,7 @@ export const api = {
         request<{ products: Product[]; total: number }>('/products?limit=1'),
         request<Portfolio[]>('/portfolios'),
       ]);
-      const totalPV = portfolios.reduce((sum, p) => sum + (p.totalPV || 0), 0);
+      const totalPV = portfolios.reduce((sum, p) => sum + (p.items?.reduce((s, i) => s + (i.totalPV || 0), 0) || 0), 0);
       return {
         totalProducts: productsRes.total,
         totalPortfolios: portfolios.length,

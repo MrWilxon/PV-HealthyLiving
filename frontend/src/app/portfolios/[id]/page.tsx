@@ -9,6 +9,7 @@ import { AnalyticsDialog } from '@/components/portfolio/AnalyticsDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ArrowLeft, Printer, Calendar, Plus, BarChart3, TrendingUp, Pencil, Copy, Trash2 } from 'lucide-react';
+import { SkeletonMonthCard } from '@/components/ui/skeleton';
 import { Product } from '@/types';
 import { usePortfolioStore } from '@/stores/usePortfolioStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -146,8 +147,18 @@ export default function PortfolioDetailsPage() {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600" />
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 rounded-lg bg-gray-100 animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-7 w-48 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <SkeletonMonthCard />
+            <SkeletonMonthCard />
+          </div>
         </div>
       </MainLayout>
     );

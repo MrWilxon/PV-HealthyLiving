@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Plus, Eye, Trash2, Copy, AlertCircle, Check, X, Pencil, TrendingUp } from 'lucide-react';
+import { SkeletonPortfolioCard } from '@/components/ui/skeleton';
 import { Portfolio } from '@/types';
 import { usePortfolioStore } from '@/stores/usePortfolioStore';
 import { useToast } from '@/components/ui/toast';
@@ -138,8 +139,10 @@ export default function PortfoliosPage() {
         )}
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonPortfolioCard key={i} />
+            ))}
           </div>
         ) : portfolios.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border">
