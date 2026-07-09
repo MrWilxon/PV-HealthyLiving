@@ -6,6 +6,7 @@ import { ProductTable } from '@/components/products/ProductTable';
 import { ProductForm } from '@/components/products/ProductForm';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Button } from '@/components/ui/button';
+import { SkeletonTable } from '@/components/ui/skeleton';
 import { Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Product } from '@/types';
 import { useProductStore } from '@/stores/useProductStore';
@@ -117,9 +118,7 @@ export default function ProductsPage() {
         )}
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600" />
-          </div>
+          <SkeletonTable rows={5} cols={6} />
         ) : (
           <ProductTable
             products={products}
