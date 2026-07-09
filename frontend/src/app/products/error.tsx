@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
 
-export default function Error({
+export default function ProductsError({
   error,
   reset,
 }: {
@@ -15,16 +16,12 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <div className="h-20 w-20 rounded-full bg-red-50 flex items-center justify-center mb-4">
-        <span className="text-3xl">⚠️</span>
-      </div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">Something went wrong</h2>
-      <p className="text-gray-500 mb-6 max-w-sm">
-        An error occurred while loading products. Please try again.
-      </p>
-      <Button onClick={reset} className="bg-gray-900 hover:bg-gray-800">
-        Try again
+    <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center space-y-4">
+      <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
+      <h2 className="text-lg font-semibold text-gray-900">Failed to load products</h2>
+      <p className="text-sm text-gray-500">{error.message || 'An unexpected error occurred.'}</p>
+      <Button onClick={reset} variant="outline" size="sm">
+        Try Again
       </Button>
     </div>
   );
