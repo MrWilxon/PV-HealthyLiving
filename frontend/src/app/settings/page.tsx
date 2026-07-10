@@ -55,6 +55,9 @@ export default function SettingsPage() {
   const backupInputRef = useRef<HTMLInputElement>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [pendingRestoreData, setPendingRestoreData] = useState<any>(null);
   const [vatPresets, setVatPresets] = useState<number[]>([]);
   const [newVatPreset, setNewVatPreset] = useState('');
   const [activeSection, setActiveSection] = useState('company');
@@ -180,14 +183,29 @@ export default function SettingsPage() {
         toast('Invalid backup file', 'error');
         return;
       }
-      await api.settings.restore(data);
+      setPendingRestoreData(data);
+      setShowRestoreDialog(true);
+    } catch {
+      toast('Failed to parse backup file', 'error');
+    }
+    if (backupInputRef.current) backupInputRef.current.value = '';
+  };
+
+  const confirmRestore = async () => {
+    if (!pendingRestoreData) return;
+    setIsRestoring(true);
+    try {
+      await api.settings.restore(pendingRestoreData);
       await fetchSettings();
       toast('Data restored — reloading...', 'success');
+      setShowRestoreDialog(false);
+      setPendingRestoreData(null);
       setTimeout(() => window.location.reload(), 1500);
     } catch {
       toast('Failed to restore data', 'error');
+    } finally {
+      setIsRestoring(false);
     }
-    if (backupInputRef.current) backupInputRef.current.value = '';
   };
 
   const handleReset = async () => {
@@ -553,6 +571,29 @@ export default function SettingsPage() {
             </Button>
             <Button variant="destructive" onClick={handleReset} disabled={isResetting}>
               {isResetting ? 'Resetting...' : 'Yes, Reset Everything'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRestoreDialog} onOpenChange={() => !isRestoring && setShowRestoreDialog(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Restore Backup
+            </DialogTitle>
+            <DialogDescription>
+              This will overwrite all existing products, portfolios, and settings with the backup data.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRestoreDialog(false)} disabled={isRestoring}>
+              Cancel
+            </Button>
+            <Button onClick={confirmRestore} disabled={isRestoring} className="bg-gray-900 hover:bg-gray-800">
+              {isRestoring ? 'Restoring...' : 'Yes, Restore Data'}
             </Button>
           </DialogFooter>
         </DialogContent>

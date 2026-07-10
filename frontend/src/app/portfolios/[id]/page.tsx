@@ -70,6 +70,7 @@ export default function PortfolioDetailsPage() {
   const [analyticsDialogOpen, setAnalyticsDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   const handleAddItem = async (product: Product, itemDate: string, quantity: number) => {
     if (!currentPortfolio) return;
@@ -143,6 +144,8 @@ export default function PortfolioDetailsPage() {
     group.vatAmount = group.subtotal * ((currentPortfolio?.vatPercent || 13) / 100);
     group.grandTotal = group.subtotal + group.vatAmount;
   });
+
+  const selectedMonthGroup = selectedMonth ? monthGroups.find(g => g.key === selectedMonth) : monthGroups[0];
 
   if (isLoading) {
     return (
@@ -233,7 +236,7 @@ export default function PortfolioDetailsPage() {
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {monthGroups.map((group) => (
-              <Card key={group.key} className="overflow-hidden">
+              <Card key={group.key} className={`overflow-hidden cursor-pointer transition-all ${selectedMonthGroup?.key === group.key ? 'ring-2 ring-blue-500' : 'hover:shadow-md'}`} onClick={() => setSelectedMonth(group.key)}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -330,7 +333,9 @@ export default function PortfolioDetailsPage() {
             </div>
           </div>
           <div>
-            <PortfolioSummary currency={settings?.currency || 'NPR'} />
+            <PortfolioSummary
+              currency={settings?.currency || 'NPR'}
+            />
           </div>
         </div>
       </div>

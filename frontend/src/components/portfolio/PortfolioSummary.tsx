@@ -14,11 +14,20 @@ import { Package, Calculator, DollarSign, Percent, TrendingUp } from 'lucide-rea
 import { formatCurrency, formatPV } from '@/lib/utils';
 import { usePortfolioStore } from '@/stores/usePortfolioStore';
 
-interface PortfolioSummaryProps {
-  currency?: string;
+interface MonthGroupData {
+  items: any[];
+  totalPV: number;
+  subtotal: number;
+  vatAmount: number;
+  grandTotal: number;
 }
 
-export function PortfolioSummary({ currency = 'NPR' }: PortfolioSummaryProps) {
+interface PortfolioSummaryProps {
+  currency?: string;
+  monthGroup?: MonthGroupData;
+}
+
+export function PortfolioSummary({ currency = 'NPR', monthGroup }: PortfolioSummaryProps) {
   const { currentPortfolio, updatePortfolio } = usePortfolioStore();
   const [customVat, setCustomVat] = useState('');
   const [isCustomVat, setIsCustomVat] = useState(false);
@@ -80,8 +89,13 @@ export function PortfolioSummary({ currency = 'NPR' }: PortfolioSummaryProps) {
 
   if (!currentPortfolio) return null;
 
-  const { items, subtotal, vatPercent, vatAmount, grandTotal } = currentPortfolio;
-  const totalPV = items.reduce((sum, item) => sum + item.totalPV, 0);
+  const vatPercent = currentPortfolio.vatPercent || 13;
+
+  const items = monthGroup?.items || currentPortfolio.items;
+  const totalPV = monthGroup?.totalPV || items.reduce((sum, item) => sum + (item.totalPV || 0), 0);
+  const subtotal = monthGroup?.subtotal || items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+  const vatAmount = subtotal * (vatPercent / 100);
+  const grandTotal = subtotal + vatAmount;
 
   return (
     <Card>

@@ -708,7 +708,16 @@ export default function EditPortfolioPage() {
           {/* Right: Summary Sidebar */}
           <div className="xl:col-span-1">
             <div className="sticky top-28">
-              <PortfolioSummary currency={currency} />
+              <PortfolioSummary
+                currency={currency}
+                monthGroup={selectedGroup ? {
+                  items: selectedGroup.items,
+                  totalPV: selectedGroup.totalPV,
+                  subtotal: selectedGroup.subtotal,
+                  vatAmount: selectedGroup.subtotal * (vatPercent / 100),
+                  grandTotal: selectedGroup.subtotal + selectedGroup.subtotal * (vatPercent / 100),
+                } : undefined}
+              />
             </div>
           </div>
         </div>

@@ -214,28 +214,43 @@ router.post('/restore', asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('Invalid backup data format');
   }
 
-  const collections = ['products', 'portfolios', 'portfolioItems'];
-  for (const name of collections) {
-    const snapshot = await db.collection(name).get();
-    const batch = db.batch();
-    for (const doc of snapshot.docs) {
-      batch.delete(doc.ref);
-    }
-    await batch.commit();
-  }
+  const BATCH_LIMIT = 500;
 
-  for (const item of data.products) {
-    const { id, ...rest } = item;
-    await db.collection('products').doc(id).set(rest as DocData);
-  }
-  for (const item of data.portfolios) {
-    const { id, ...rest } = item;
-    await db.collection('portfolios').doc(id).set(rest as DocData);
-  }
-  for (const item of data.portfolioItems) {
-    const { id, ...rest } = item;
-    await db.collection('portfolioItems').doc(id).set(rest as DocData);
-  }
+  const deleteCollection = async (name: string) => {
+    const snapshot = await db.collection(name).get();
+    const docs = snapshot.docs;
+    for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+      const batch = db.batch();
+      const chunk = docs.slice(i, i + BATCH_LIMIT);
+      for (const doc of chunk) {
+        batch.delete(doc.ref);
+      }
+      await batch.commit();
+    }
+  };
+
+  await Promise.all([
+    deleteCollection('products'),
+    deleteCollection('portfolios'),
+    deleteCollection('portfolioItems'),
+  ]);
+
+  const restoreCollection = async (name: string, items: any[]) => {
+    for (let i = 0; i < items.length; i += BATCH_LIMIT) {
+      const batch = db.batch();
+      const chunk = items.slice(i, i + BATCH_LIMIT);
+      for (const item of chunk) {
+        const { id, ...rest } = item;
+        const docRef = db.collection(name).doc(id);
+        batch.set(docRef, rest as DocData);
+      }
+      await batch.commit();
+    }
+  };
+
+  await restoreCollection('products', data.products);
+  await restoreCollection('portfolios', data.portfolios);
+  await restoreCollection('portfolioItems', data.portfolioItems);
 
   if (data.settings) {
     await settingsRef.doc('singleton').set(data.settings);
