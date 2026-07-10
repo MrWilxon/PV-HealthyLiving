@@ -264,12 +264,6 @@ export default function EditPortfolioPage() {
     }
   }, [currentPortfolio?.date]);
 
-  useEffect(() => {
-    return () => {
-      if (dateDebounceRef.current) clearTimeout(dateDebounceRef.current);
-    };
-  }, []);
-
   const handleDateChange = (date: string) => {
     setLocalDate(date);
     setIsDirty(true);

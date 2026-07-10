@@ -111,31 +111,59 @@ export const useProductStore = create<ProductState>((set, get) => ({
   },
 
   createProduct: async (data) => {
-    const product = await api.products.create(data);
-    set((state) => ({ products: [...state.products, product] }));
-    return product;
+    set({ error: null });
+    try {
+      const product = await api.products.create(data);
+      set((state) => ({ products: [...state.products, product] }));
+      return product;
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to create product';
+      set({ error: msg });
+      throw new Error(msg);
+    }
   },
 
   updateProduct: async (id, data) => {
-    const product = await api.products.update(id, data);
-    set((state) => ({
-      products: state.products.map((p) => (p.id === id ? product : p)),
-    }));
-    return product;
+    set({ error: null });
+    try {
+      const product = await api.products.update(id, data);
+      set((state) => ({
+        products: state.products.map((p) => (p.id === id ? product : p)),
+      }));
+      return product;
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to update product';
+      set({ error: msg });
+      throw new Error(msg);
+    }
   },
 
   deleteProduct: async (id) => {
-    await api.products.delete(id);
-    set((state) => ({
-      products: state.products.filter((p) => p.id !== id),
-    }));
+    set({ error: null });
+    try {
+      await api.products.delete(id);
+      set((state) => ({
+        products: state.products.filter((p) => p.id !== id),
+      }));
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to delete product';
+      set({ error: msg });
+      throw new Error(msg);
+    }
   },
 
   toggleFavorite: async (id) => {
-    const product = await api.products.toggleFavorite(id);
-    set((state) => ({
-      products: state.products.map((p) => (p.id === id ? product : p)),
-    }));
+    set({ error: null });
+    try {
+      const product = await api.products.toggleFavorite(id);
+      set((state) => ({
+        products: state.products.map((p) => (p.id === id ? product : p)),
+      }));
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to toggle favorite';
+      set({ error: msg });
+      throw new Error(msg);
+    }
   },
 
   setFilters: (newFilters) => {

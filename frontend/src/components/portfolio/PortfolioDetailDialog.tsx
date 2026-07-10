@@ -188,7 +188,7 @@ export function PortfolioDetailDialog({ open, onOpenChange, portfolioId }: Portf
                     </div>
 
                     <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                      <span className="text-sm text-gray-600">VAT (13%)</span>
+                      <span className="text-sm text-gray-600">VAT ({currentPortfolio?.vatPercent || 13}%)</span>
                       <span className="text-sm font-medium">{formatCurrency(group.vatAmount)}</span>
                     </div>
 

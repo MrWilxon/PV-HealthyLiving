@@ -2,6 +2,23 @@ import { Product, Portfolio, PortfolioItem, Settings, BackupData, DashboardStats
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
+function getAdminKey(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return localStorage.getItem('admin_key') || undefined;
+}
+
+function setAdminKey(key: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('admin_key', key);
+  }
+}
+
+function promptAdminKey(): string | undefined {
+  const key = window.prompt('Enter admin key to perform this action:');
+  if (key) setAdminKey(key);
+  return key || undefined;
+}
+
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -17,6 +34,20 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   }
 
   return res.json();
+}
+
+async function adminRequest<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
+  let adminKey = getAdminKey();
+  if (!adminKey) {
+    adminKey = promptAdminKey();
+    if (!adminKey) throw new Error('Admin key required');
+  }
+
+  return request<T>(endpoint, {
+    method: 'POST',
+    headers: { 'x-admin-key': adminKey },
+    body: JSON.stringify(body),
+  });
 }
 
 export const api = {
@@ -91,10 +122,12 @@ export const api = {
     update: (data: Partial<Settings>) =>
       request<Settings>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
     reset: () =>
-      request<{ message: string }>('/settings/reset', { method: 'POST', body: JSON.stringify({ confirm: true }) }),
+      adminRequest<{ message: string }>('/settings/reset', { confirm: true }),
     backup: () =>
       request<BackupData>('/settings/backup'),
     restore: (data: BackupData) =>
-      request<{ message: string }>('/settings/restore', { method: 'POST', body: JSON.stringify({ data }) }),
+      adminRequest<{ message: string }>('/settings/restore', { data }),
+    seed: () =>
+      adminRequest<{ message: string; total: number }>('/settings/seed', { confirm: true }),
   },
 };

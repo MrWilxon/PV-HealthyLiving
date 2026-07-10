@@ -218,7 +218,12 @@ export default function PortfolioDetailsPage() {
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = `portfolio-${currentPortfolio.name.replace(/\s+/g, '-').toLowerCase()}-${currentPortfolio.date || 'undated'}.json`;
+              const sanitizedName = currentPortfolio.name
+                .replace(/[^a-zA-Z0-9\s\-]/g, '')
+                .replace(/\s+/g, '-')
+                .toLowerCase()
+                .slice(0, 50);
+              a.download = `portfolio-${sanitizedName || 'unnamed'}-${currentPortfolio.date || 'undated'}.json`;
               a.click();
               URL.revokeObjectURL(url);
             }}>
@@ -291,7 +296,7 @@ export default function PortfolioDetailsPage() {
                     </div>
 
                     <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                      <span className="text-sm text-gray-600">VAT (13%)</span>
+                      <span className="text-sm text-gray-600">VAT ({currentPortfolio.vatPercent || 13}%)</span>
                       <span className="text-sm font-medium">{formatCurrency(group.vatAmount)}</span>
                     </div>
 

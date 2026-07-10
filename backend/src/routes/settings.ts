@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db, DocData } from '../config/firebase';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
+import { adminMiddleware } from '../middleware/auth';
 
 const router = Router();
 const settingsRef = db.collection('settings');
@@ -105,7 +106,7 @@ router.put('/', asyncHandler(async (req: Request, res: Response) => {
   res.json({ id: updated.id, ...defaultSettings, ...updatedData });
 }));
 
-router.post('/seed', asyncHandler(async (req: Request, res: Response) => {
+router.post('/seed', adminMiddleware, asyncHandler(async (req: Request, res: Response) => {
   const { confirm } = req.body;
   if (confirm !== true) {
     throw new AppError('Set confirm: true to seed products');

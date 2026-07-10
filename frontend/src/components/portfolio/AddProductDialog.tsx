@@ -25,6 +25,7 @@ export function AddProductDialog({ open, onOpenChange, onSelect, selectedProduct
   const [isLoading, setIsLoading] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const inputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (open) {
@@ -65,8 +66,11 @@ export function AddProductDialog({ open, onOpenChange, onSelect, selectedProduct
   }, []);
 
   useEffect(() => {
+    const currentRequest = ++requestIdRef.current;
     const debounceTimer = setTimeout(() => {
-      search(query);
+      search(query).then(() => {
+        // Results already set in search function
+      });
     }, 300);
     return () => clearTimeout(debounceTimer);
   }, [query, search]);

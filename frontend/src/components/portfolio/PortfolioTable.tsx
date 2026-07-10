@@ -311,19 +311,25 @@ export function PortfolioTable({ items, currency = 'NPR', editable = true, vatPe
   const { updateItemLocally, updateItem, deleteItem } = usePortfolioStore();
   const { toast } = useToast();
 
+  const numericFields = useMemo(() => new Set(['pv', 'dp', 'quantity', 'totalPV', 'totalPrice']), []);
+
+  const parseValue = useCallback((field: string, val: string) => {
+    return numericFields.has(field) ? (parseFloat(val) || 0) : val;
+  }, [numericFields]);
+
   const handleQty = useCallback((id: string, qty: number) => {
     updateItemLocally(id, { quantity: qty });
     updateItem(id, { quantity: qty });
   }, [updateItemLocally, updateItem]);
 
   const handleEdit = useCallback((id: string, field: string, val: string) => {
-    updateItemLocally(id, { [field]: parseFloat(val) || 0 });
-  }, [updateItemLocally]);
+    updateItemLocally(id, { [field]: parseValue(field, val) });
+  }, [updateItemLocally, parseValue]);
 
   const handleBlur = useCallback(async (id: string, field: string, val: string) => {
     setEditingCell(null);
-    try { await updateItem(id, { [field]: parseFloat(val) || 0 }); } catch { toast('Update failed', 'error'); }
-  }, [updateItem, toast]);
+    try { await updateItem(id, { [field]: parseValue(field, val) }); } catch { toast('Update failed', 'error'); }
+  }, [updateItem, toast, parseValue]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteItemId) return;

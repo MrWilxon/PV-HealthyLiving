@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -44,7 +43,6 @@ function SortIcon({ field, sortBy, sortOrder }: { field: string; sortBy: string;
 export function ProductTable({ products, onEdit, onDuplicate }: ProductTableProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { deleteProduct, toggleFavorite, sortBy, sortOrder, setSort } = useProductStore();
-  const router = useRouter();
 
   const handleDelete = async () => {
     if (deleteId) {

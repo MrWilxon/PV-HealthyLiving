@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Save, Upload, Download, Building2, Trash2, AlertCircle, Database, Plus, X,
-  Calculator, Percent, FileDown, FileUp, RotateCcw,
+  Calculator, Percent, FileDown, FileUp,
 } from 'lucide-react';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useToast } from '@/components/ui/toast';
@@ -62,6 +62,7 @@ export default function SettingsPage() {
   const [newVatPreset, setNewVatPreset] = useState('');
   const [activeSection, setActiveSection] = useState('company');
   const [hasChanges, setHasChanges] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   useUnsavedChanges(hasChanges);
 
   const {
@@ -77,6 +78,26 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -70% 0px' }
+    );
+
+    SECTIONS.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [isLoading]);
 
   useEffect(() => {
     if (settings) {
@@ -96,9 +117,30 @@ export default function SettingsPage() {
   }, [settings, reset]);
 
   useEffect(() => {
-    const subscription = watch(() => setHasChanges(true));
+    if (!settings) return;
+    let skipNext = true;
+    const subscription = watch((values) => {
+      if (skipNext) {
+        skipNext = false;
+        return;
+      }
+      const currentValues = {
+        defaultVatPercent: settings.defaultVatPercent,
+        currency: settings.currency,
+        decimalPlaces: settings.decimalPlaces,
+        defaultQuantity: settings.defaultQuantity,
+        autoSave: settings.autoSave,
+        companyName: settings.companyName || '',
+        companyAddress: settings.companyAddress || '',
+        companyPhone: settings.companyPhone || '',
+        companyEmail: settings.companyEmail || '',
+      };
+      const hasActualChanges = JSON.stringify(values) !== JSON.stringify(currentValues) ||
+        JSON.stringify(vatPresets) !== JSON.stringify(settings.vatPresets || [0, 10, 13, 15]);
+      setHasChanges(hasActualChanges);
+    });
     return () => subscription.unsubscribe();
-  }, [watch]);
+  }, [watch, settings, vatPresets]);
 
   const onSubmit = async (data: SettingsFormData) => {
     try {
@@ -187,8 +229,9 @@ export default function SettingsPage() {
       setShowRestoreDialog(true);
     } catch {
       toast('Failed to parse backup file', 'error');
+    } finally {
+      if (backupInputRef.current) backupInputRef.current.value = '';
     }
-    if (backupInputRef.current) backupInputRef.current.value = '';
   };
 
   const confirmRestore = async () => {
@@ -489,24 +532,22 @@ export default function SettingsPage() {
                         type="button"
                         variant="outline"
                         size="sm"
+                        disabled={isSeeding}
                         onClick={async () => {
                           if (!confirm('This will add 31 sample products. Continue?')) return;
+                          setIsSeeding(true);
                           try {
-                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/settings/seed`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ confirm: true }),
-                            });
-                            const data = await res.json();
-                            if (!res.ok) throw new Error(data.error?.message || 'Seed failed');
+                            const data = await api.settings.seed();
                             toast(data.message, 'success');
                           } catch (err) {
                             toast((err as Error).message, 'error');
+                          } finally {
+                            setIsSeeding(false);
                           }
                         }}
                       >
                         <Plus className="h-4 w-4 mr-1.5" />
-                        Seed Products
+                        {isSeeding ? 'Seeding...' : 'Seed Products'}
                       </Button>
                       <p className="text-xs text-gray-400 mt-1.5">Add 31 sample PV HealthyLiving products</p>
                     </div>

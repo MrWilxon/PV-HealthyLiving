@@ -1,13 +1,8 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 
 export function useUnsavedChanges(hasUnsaved: boolean) {
-  const router = useRouter();
-  const pathname = usePathname();
-
-  // Warn before closing tab/browser
   useEffect(() => {
     if (!hasUnsaved) return;
 
@@ -20,28 +15,26 @@ export function useUnsavedChanges(hasUnsaved: boolean) {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsaved]);
 
-  // Intercept browser back/forward
   useEffect(() => {
     if (!hasUnsaved) return;
 
-    const handlePopState = (e: PopStateEvent) => {
-      if (window.confirm('You have unsaved changes. Leave anyway?')) {
-        // Allow navigation
-      } else {
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('a[href]');
+      if (!target) return;
+
+      const href = target.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+      if (!window.confirm('You have unsaved changes. Leave anyway?')) {
         e.preventDefault();
-        window.history.pushState(null, '', pathname);
+        e.stopPropagation();
       }
     };
 
-    window.addEventListener('popstate', handlePopState);
-    window.history.pushState(null, '', pathname);
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [hasUnsaved]);
 
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [hasUnsaved, pathname]);
-
-  // Intercept Next.js router navigation
   const confirmLeave = useCallback(() => {
     if (!hasUnsaved) return true;
     return window.confirm('You have unsaved changes. Leave anyway?');

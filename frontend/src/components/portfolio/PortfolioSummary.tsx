@@ -13,6 +13,7 @@ import {
 import { Package, Calculator, DollarSign, Percent, TrendingUp } from 'lucide-react';
 import { formatCurrency, formatPV } from '@/lib/utils';
 import { usePortfolioStore } from '@/stores/usePortfolioStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 
 interface MonthGroupData {
   items: any[];
@@ -29,11 +30,12 @@ interface PortfolioSummaryProps {
 
 export function PortfolioSummary({ currency = 'NPR', monthGroup }: PortfolioSummaryProps) {
   const { currentPortfolio, updatePortfolio } = usePortfolioStore();
+  const { settings } = useSettingsStore();
   const [customVat, setCustomVat] = useState('');
   const [isCustomVat, setIsCustomVat] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const vatPresets = ['0', '10', '13', '15'];
+  const vatPresets = (settings?.vatPresets || [0, 10, 13, 15]).map(String);
 
   useEffect(() => {
     if (currentPortfolio) {
