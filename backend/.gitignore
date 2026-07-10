@@ -5,4 +5,5 @@ dist
 *.json
 !package.json
 !tsconfig.json
+!data.json
 serviceAccountKey.json
